@@ -11,16 +11,17 @@ namespace ServerChatGUI
 {
     public partial class Form1 : Form
     {
-        public Timer timer1;
-        public TcpListener myList = null;
-
-        public string EncryptionKey = GetHashedKey("Alexandros");
+        public static TcpListener myList = null;
+        public static Socket s = null;
+        public static string EncryptionKey = GetHashedKey("Alexandros");
+        public static TextBox chatBox = null;
 
         public Form1()
         {
             InitializeComponent();
             try
             {
+                chatBox = chatDisplay_txtbox;
                 IPAddress ipAd = IPAddress.Parse("172.17.1.241");
                 // use local m/c IP address, and 
                 // use the same in the client
@@ -32,15 +33,16 @@ namespace ServerChatGUI
                 myList.Start();
 
 
-                Socket s = myList.AcceptSocket();
-                this.Show();
+                s = myList.AcceptSocket();
+                
+
 
                 chatDisplay_txtbox.AppendText("Connection accepted from " + s.RemoteEndPoint + "\n");
                 connection_lbl.Text = "Connected";
                 connection_lbl.ForeColor = Color.Green;
 
-
-                //InitTimer();
+                System.Threading.Timer t = new System.Threading.Timer(TimerCallback, null, 0, 2000);
+                
             }
 
             catch (Exception e)
@@ -122,7 +124,7 @@ namespace ServerChatGUI
 
         private void button1_Click(object sender, EventArgs e)
         {
-            Socket s = myList.AcceptSocket();
+            
             chatDisplay_txtbox.AppendText("Me:\t ");
             chatDisplay_txtbox.AppendText(inMessage_txtbox.Text + "\n");
 
@@ -132,29 +134,21 @@ namespace ServerChatGUI
 
         }
 
-        public void InitTimer()
+        private static void TimerCallback(Object o)
         {
-            timer1 = new Timer();
-            timer1.Tick += new EventHandler(timer1_Tick);
-            timer1.Interval = 200; // in miliseconds
-            timer1.Start();
-        }
-
-        private void timer1_Tick(object sender, EventArgs e)
-        {
-            Socket s = myList.AcceptSocket();
-            if (s.Available > 0)
+            if (s.ReceiveBufferSize > 0)
             {
                 byte[] b = new byte[s.ReceiveBufferSize];
                 int k = s.Receive(b);
                 string msg = "";
-                chatDisplay_txtbox.AppendText("Other:\t");
+                chatBox.AppendText("Other:\t");
                 for (int i = 0; i < k; i++)
                 {
                     msg += Convert.ToChar(b[i]);
                 }
-                chatDisplay_txtbox.AppendText(TxtDecrypt(msg, EncryptionKey) + "\n");
+                chatBox.AppendText(TxtDecrypt(msg, EncryptionKey) + "\n");
             }
+            GC.Collect();
         }
     }
 }
