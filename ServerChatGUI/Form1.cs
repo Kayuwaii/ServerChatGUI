@@ -22,8 +22,8 @@ namespace ServerChatGUI
             try
             {
                 chatBox = chatDisplay_txtbox;
-                IPAddress ipAd = IPAddress.Parse("172.17.1.241");
-                // use local m/c IP address, and 
+                IPAddress ipAd = IPAddress.Parse("192.168.1.12");
+                // use local m/c IP address, and
                 // use the same in the client
 
                 /* Initializes the Listener */
@@ -32,25 +32,18 @@ namespace ServerChatGUI
                 /* Start Listeneting at the specified port */
                 myList.Start();
 
-
                 s = myList.AcceptSocket();
-                
-
 
                 chatDisplay_txtbox.AppendText("Connection accepted from " + s.RemoteEndPoint + "\n");
                 connection_lbl.Text = "Connected";
                 connection_lbl.ForeColor = Color.Green;
 
                 System.Threading.Timer t = new System.Threading.Timer(TimerCallback, null, 0, 2000);
-                
             }
-
             catch (Exception e)
             {
                 Console.WriteLine("Error..... " + e.ToString());
             }
-
-
         }
 
         public static string GetHashedKey(string text)
@@ -121,34 +114,31 @@ namespace ServerChatGUI
             return cryptTxt;
         }
 
-
         private void button1_Click(object sender, EventArgs e)
         {
-            
             chatDisplay_txtbox.AppendText("Me:\t ");
             chatDisplay_txtbox.AppendText(inMessage_txtbox.Text + "\n");
 
-
             String str = TxtEncrypt(inMessage_txtbox.Text, EncryptionKey);
             s.Send(Encoding.UTF8.GetBytes(str));
-
+            GC.Collect();
         }
 
-        private static void TimerCallback(Object o)
+        private void TimerCallback(Object o)
         {
             if (s.ReceiveBufferSize > 0)
             {
                 byte[] b = new byte[s.ReceiveBufferSize];
                 int k = s.Receive(b);
                 string msg = "";
-                chatBox.AppendText("Other:\t");
+                chatDisplay_txtbox.Invoke(new Action(() => chatDisplay_txtbox.AppendText("Other:\t")));
                 for (int i = 0; i < k; i++)
                 {
                     msg += Convert.ToChar(b[i]);
                 }
-                chatBox.AppendText(TxtDecrypt(msg, EncryptionKey) + "\n");
+                chatDisplay_txtbox.Invoke(new Action(() => chatDisplay_txtbox.AppendText(TxtDecrypt(msg, EncryptionKey) + "\n")));
+                
             }
-            GC.Collect();
         }
     }
 }
